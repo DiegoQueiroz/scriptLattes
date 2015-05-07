@@ -35,6 +35,12 @@ from parserLattesXML import *
 from htmlentitydefs import name2codepoint
 from geolocalizador import *
 
+class _LattesHTTPRedirectHandler(urllib2.HTTPRedirectHandler):
+	def redirect_request(self, req, fp, code, msg, headers, newurl):
+		# evita captcha
+		newurl = re.sub('(?<=[?&]metodo=)apresentar', 'captchaValido', newurl)
+		return super(_LattesHTTPRedirectHandler, self).redirect_request(req, fp, code, msg, headers, newurl)
+
 class Membro:
 	idLattes = None # ID Lattes
 	idMembro = None
@@ -206,18 +212,13 @@ class Membro:
 						txdata = None
 						txheaders = {   
 						'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:2.0) Gecko/20100101 Firefox/4.0',
-						'Accept-Language': 'en-us,en;q=0.5',
-						'Accept-Encoding': 'deflate',
-						'Keep-Alive': '115',
-						'Connection': 'keep-alive',
-						'Cache-Control': 'max-age=0',
-						'Cookie': 'style=standard; __utma=140185953.294397416.1313390179.1313390179.1317145115.2; __utmz=140185953.1317145115.2.2.utmccn=(referral)|utmcsr=emailinstitucional.cnpq.br|utmcct=/ei/emailInstitucional.do|utmcmd=referral; JSESSIONID=1B98ABF9642E01597AABA0F7A8807FD1.node2',
 						}
 		
 						print "Baixando CV :"+self.url
 
 						req = urllib2.Request(self.url, txdata, txheaders) # Young folks by P,B&J!
-						arquivoH = urllib2.urlopen(req) 
+						lattesOpener = urllib2.build_opener(_LattesHTTPRedirectHandler(), urllib2.HTTPCookieProcessor())
+						arquivoH = lattesOpener.open(req) 
 						cvLattesHTML = arquivoH.read()
 						arquivoH.close()
 						time.sleep(1)
